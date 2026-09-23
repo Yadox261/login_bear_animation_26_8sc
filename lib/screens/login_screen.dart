@@ -18,6 +18,30 @@ class _LoginScreenState extends State<LoginScreen> {
   SMITrigger? _trigSuccess; //para controlar la animación de éxito
   SMITrigger? _trigFail; //para controlar la animación de falla
 
+  //2.1 crear las variables de foco
+  final FocusNode _emailFocusNode = FocusNode(); //para controlar el foco del campo de texto de correo electrónico
+  final FocusNode _passwordFocusNode = FocusNode(); //para controlar el foco del campo
+
+  //2.2 agregar los listeners de foco
+  @override
+  void initState() {
+    super.initState();
+    _emailFocusNode.addListener(() {
+      //para controlar el foco
+      if(_emailFocusNode.hasFocus) {
+        if(_isHandsUp != null) {
+          _isHandsUp?.change(false);
+        }
+      } 
+      setState(() {});
+    });
+    _passwordFocusNode.addListener(() {
+      //para controlar el foco
+      _isHandsUp?.change(_passwordFocusNode.hasFocus);
+      setState(() {});
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size; //para obtener el tamaño de la pantalla
@@ -48,6 +72,7 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               const SizedBox(height: 20), //campo de texto para el correo
               TextField(
+                focusNode: _emailFocusNode, //para controlar el foco del campo de texto de correo electrónico
                 onTap: () {
                   _isChecking?.change(true);
                   _isHandsUp?.change(false);
@@ -67,6 +92,7 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               const SizedBox(height: 20),
               TextField( //campo de texto para la contraseña
+              focusNode: _passwordFocusNode,
                 onTap: () {
                   _isChecking?.change(false);
                   _isHandsUp?.change(true);
@@ -99,5 +125,11 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
       ),
     );
+  }
+  @override
+  void dispose() {
+    _emailFocusNode.dispose(); //para liberar los recursos del foco del campo de texto de correo electrónico
+    _passwordFocusNode.dispose(); //para liberar los recursos del foco del campo de texto de contraseña
+    super.dispose();
   }
 }
