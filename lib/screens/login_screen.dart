@@ -29,7 +29,52 @@ class _LoginScreenState extends State<LoginScreen> {
   //2.1 crear las variables de foco
   final FocusNode _emailFocusNode = FocusNode();
   final FocusNode _passwordFocusNode = FocusNode();
+//4.1 crear el método de validación
+  final _emailCtrl = TextEditingController();
+  final _passCtrl = TextEditingController();
 
+  //4.2 crear las variables de error message
+  String? emailError;
+  String? passwordError;
+  
+  //4.3 validadores 
+  bool isValidEmail(String email) {
+    // Expresión regular para validar el formato del correo electrónico
+    final re = RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$'); // Expresión regular para validar el formato del correo electrónico
+    return re.hasMatch(email);
+  }
+  bool isValidPassword(String password) {
+    // Validar que la contraseña tenga al menos 6 caracteres
+    final re = RegExp(r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$',);
+    return re.hasMatch(password);
+  }
+  //4.4 crear el metodo de validar accion al boton de login
+  void login() {
+    //4.5 antes de lo que escriba el usuario quitar el espacio en blanco al inicio y al final
+    final email = _emailCtrl.text.trim();
+    final password = _passCtrl.text;
+    //4.6 validar que el correo y la contraseña sean correctos
+    final eError = isValidEmail(email) ? null : 'Invalid email format';
+    final pError = isValidPassword(password) ? null : 'Invalid password';
+
+    setState(() {
+      emailError = eError;
+      passwordError = pError;  
+    });
+
+    //4.7 si el correo y la contraseña son correctos, mostrar la animación de success
+    FocusScope.of(context).unfocus(); // quitar el foco de los campos de texto
+    _typpingDebouncer?.cancel(); // cancelar el timer pendiente
+    _isHandsUp?.change(false);
+    _isChecking?.change(false);
+    _numLook?.value = 50.0; // mirar al frente
+    //4.8 activar triggers de animación de éxito o falla según corresponda
+    if (eError == null && pError == null) {
+      _trigSuccess?.fire();
+    } else {
+      _trigFail?.fire();
+    }
+  }
   //2.2 agregar los listeners de foco
   @override
   void initState() {
@@ -59,7 +104,7 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size; // tamaño de la pantalla
     return Scaffold(
-      body: SafeArea(
+      body: SingleChildScrollView(// SingleChildScrollView para que la pantalla sea scrollable y no se corte el contenido
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20),
           child: Column(
@@ -92,6 +137,8 @@ class _LoginScreenState extends State<LoginScreen> {
               const SizedBox(height: 20),
               // campo de texto para el correo
               TextField(
+                //4.9 agregar controladores y listeners de foco y cambios de texto
+                controller: _emailCtrl,
                 focusNode: _emailFocusNode,
                 onTap: () {
                   _isChecking?.change(true);
@@ -117,6 +164,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 },
                 keyboardType: TextInputType.emailAddress,
                 decoration: InputDecoration(
+                  errorText: emailError, // 4.10 mostrar el mensaje de error si existe
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(10),
                   ),
@@ -127,6 +175,7 @@ class _LoginScreenState extends State<LoginScreen> {
               const SizedBox(height: 20),
               // campo de texto para la contraseña
               TextField(
+                controller: _passCtrl,
                 focusNode: _passwordFocusNode,
                 onTap: () {
                   _isChecking?.change(false);
@@ -138,6 +187,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 },
                 obscureText: _obscure,
                 decoration: InputDecoration(
+                  errorText: passwordError,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(10),
                   ),
@@ -156,12 +206,50 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
               ),
+              SizedBox(
+                width: size.width,
+                child: const Text(
+                  'forgot password?',
+                  textAlign: TextAlign.right,// alinear a la derecha
+                  style: TextStyle(decoration: TextDecoration.underline,color: Colors.indigoAccent),// subrayar el texto
+                )
+              ), 
               const SizedBox(height: 20),
               // botón de inicio de sesión
-              ElevatedButton(
-                onPressed: () {},
-                child: const Text('Login'),
+              MaterialButton(
+                onPressed: login,
+                color: const Color.fromARGB(255, 108, 17, 178),
+                minWidth: size.width,
+                height: 50,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Text(
+                  'Login',
+                  style: TextStyle(color: Colors.white, fontSize: 18),
+                ),
               ),
+              // boton de registro
+              const SizedBox(height: 20),
+              SizedBox(
+                width: size.width,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: const [
+                    Text('Don\'t have an account?'),
+                    SizedBox(width: 5),
+                    Text(
+                      'Sign up',
+                      style: TextStyle(
+                        color: Color.fromARGB(255, 0, 0, 0),
+                        decoration: TextDecoration.underline,// subrayar el texto
+                        fontWeight: FontWeight.bold
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // botón de registro
             ],
           ),
         ),
@@ -171,6 +259,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   void dispose() {
+   // _controller?.dispose();// liberar rlos controladores de animación
     _typpingDebouncer?.cancel(); // cancelar el timer pendiente
     _emailFocusNode.dispose();
     _passwordFocusNode.dispose();
